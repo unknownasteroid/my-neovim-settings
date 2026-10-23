@@ -31,7 +31,7 @@ vim.opt.smartindent = true
 vim.keymap.set("n", "<Esc>", "<cmd>nohlsearch<CR>")
 
 -- Keybinds to make split navigation easier.
---  Use CTRL+<hjkl> to switch between windows
+-- Use CTRL+<hjkl> to switch between windows
 vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
 vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
 vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
@@ -58,6 +58,9 @@ vim.diagnostic.config({
 vim.keymap.set("n", "<leader>q", vim.diagnostic.setloclist, {
   desc = "Open diagnostic quickfix list",
 })
+vim.keymap.set('n', '<leader>f', function()
+  vim.lsp.buf.format({ async = true })
+end, { desc = 'Auto format file' })
 
 -- Highlight yanked text
 vim.api.nvim_create_autocmd("TextYankPost", {
@@ -126,7 +129,6 @@ require("lazy").setup({
     opts = {
       keymap = {
         preset = "default",
-        ["<C-y>"] = { "select_and_accept" },
       },
       completion = {
         documentation = {
@@ -151,6 +153,87 @@ require("lazy").setup({
   {
     "NMAC427/guess-indent.nvim",
     opts = {},
+  },
+
+  -- Debugging for C/C++
+  {
+    "mfussenegger/nvim-dap",
+    config = function()
+      local dap = require("dap")
+
+      dap.adapters.gdb = {
+        type = "executable",
+        command = "gdb",
+        args = { "--interpreter=dap", "--eval-command", "set print pretty on" },
+      }
+
+      dap.configurations.cpp = {
+        {
+          name = "Launch (ask for executable)",
+          type = "gdb",
+          request = "launch",
+          program = function()
+            return vim.fn.input("Path to executable: ", vim.fn.getcwd() .. "/", "file")
+          end,
+          cwd = "${workspaceFolder}",
+          stopAtBeginningOfMainSubprogram = false,
+          setupCommands = {
+            {
+              text = "-enable-pretty-printing",
+              description = "enable pretty printing",
+              ignoreFailures = false,
+            },
+          },
+          console = 'integratedTerminal',
+        },
+      }
+      dap.configurations.c = dap.configurations.cpp
+    end,
+  },
+
+  -- Debugging UI
+  {
+    "rcarriga/nvim-dap-ui",
+    dependencies = {
+      "mfussenegger/nvim-dap",
+      "nvim-neotest/nvim-nio", -- Required dependency
+    },
+    config = function()
+      local dap = require("dap")
+      local dapui = require("dapui")
+
+      -- Initialize the UI
+      dapui.setup()
+
+      -- Automatically open the panel when debugging starts, close when it ends
+      dap.listeners.before.attach.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.launch.dapui_config = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated.dapui_config = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited.dapui_config = function()
+        dapui.close()
+      end
+
+      -- Your original debug keymaps (can be moved here or kept outside)
+      vim.keymap.set("n", "<F5>", dap.continue, { desc = "Start/Continue debugger" })
+      vim.keymap.set("n", "<F6>", dap.terminate, { desc = "Terminate debugger" })
+      vim.keymap.set("n", "<leader>b", dap.toggle_breakpoint, { desc = "Toggle breakpoint" })
+
+      -- Additional stepping keymaps
+      vim.keymap.set("n", "<F10>", dap.step_over, { desc = "Step over" })
+      vim.keymap.set("n", "<F11>", dap.step_into, { desc = "Step into" })
+      vim.keymap.set("n", "<F12>", dap.step_out, { desc = "Step out" })
+
+      -- Toggle DAP UI
+      vim.keymap.set("n", "<F7>", function()
+        require("dapui").toggle()
+      end, { desc = "Toggle DAP UI" })
+    end,
   },
 })
 
