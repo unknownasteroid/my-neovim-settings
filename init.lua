@@ -235,6 +235,38 @@ require("lazy").setup({
       end, { desc = "Toggle DAP UI" })
     end,
   },
+
+  -- Markdown
+  {
+    'MeanderingProgrammer/render-markdown.nvim',
+    dependencies = { 'nvim-treesitter/nvim-treesitter', 'nvim-tree/nvim-web-devicons' },
+    opts = {},
+  },
+
+  -- Statusline
+  {
+    'nvim-lualine/lualine.nvim',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    init = function()
+      vim.opt.showmode = false
+    end,
+    opts = {
+      options = {
+        theme = 'auto',
+        globalstatus = true,
+        section_separators = { left = '', right = '' },
+        component_separators = { left = '', right = '' },
+      },
+      sections = {
+        lualine_a = { 'mode' },
+        lualine_b = { 'branch', 'diff', 'diagnostics' },
+        lualine_c = { { 'filename', path = 3, symbols = { modified = ' ●', readonly = ' ' } } },
+        lualine_x = { 'encoding', 'fileformat', 'filetype' },
+        lualine_y = { 'progress' },
+        lualine_z = { 'location' },
+      },
+    },
+  }
 })
 
 -- LSP keymaps
